@@ -3,6 +3,7 @@
 #define DEPTH_POT 5
 #define USER_LED 10
 #define VARIO_LED 9
+#define CHMODE_LED 8
 #define USER_SWITCH 2
 #define BYPASS_SWITCH 12
 
@@ -31,6 +32,7 @@ void setup() {
   // put your setup code here, to run once:
   pinMode(USER_LED, OUTPUT);
   pinMode(VARIO_LED, OUTPUT);
+  pinMode(CHMODE_LED, OUTPUT);
   pinMode(USER_SWITCH, INPUT);
   pinMode(BYPASS_SWITCH, INPUT);
   TCCR1A = (1 << COM1A0) | (1 << COM1A1) | (1 << COM1B0) | (1 << COM1B1) | (1 << WGM10) | (1 << WGM11); //toggle OCRs on compare match. Phase correct 10 bit pwm
@@ -81,23 +83,22 @@ void loop() {
   float percentDepth = mapfloat(depth, 0, 1023, 0, 1);
 
 
+  digitalWrite(CHMODE_LED, flags & CHANGE_MODE ? HIGH : LOW); //this ternary statement appears unnecessary, but I don't know the risks of sending a shifted bitstream to digitalwrite. It might blindly write to that port and do weird things
   switch(mode){
     case MODE_TRIANGLE:
       OCR1A = count * percentDepth;
-      OCR1B = (flags & CHANGE_MODE) ? count * percentDepth : 0;
+      OCR1B = count * percentDepth;
       
       break;
      case MODE_SQUARE:
       OCR1A = (flags & INCREMENTING_FLAG) * depth;
-      OCR1B = (flags & CHANGE_MODE) ? (flags & INCREMENTING_FLAG) * depth : 0;
+      OCR1B = (flags & INCREMENTING_FLAG) * depth;
   
       break;
      case MODE_OFF:
      default:
       OCR1A = 1023;
-      OCR1B = 1023;
-      //digitalWrite(USER_LED, 0);
-      //digitalWrite(VARIO_LED, 0);
+      OCR1B = 1023;   
       break;
   }
   delay(50); //people speed, sand is too fast
